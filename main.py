@@ -42,9 +42,24 @@ class Denoise:
 		while error > self.tol and k < self.max_iter:
 			k += 1
 			uprev = u
+
+			# Subproblem 1: Compute the optimal solution the u subproblem
 			u = self.gs(u)
-			# TODO(mjrodriguez): Compute ux and uy
-			# TODO(mjrodriguez): self.__dx = self.shrink()
+
+			# Subproblem 2: Update dx and dy	
+			# Computing the finite difference derivatives du/dx and du/dy
+			uxtemp = np.c_[u[:,0], u[:,:self.width-1]]
+			ux = u-uxtemp
+			uytemp = np.vstack((u[0,:], u[:self.height-1,:]))
+			uy = u-uytemp
+
+			self.__dx = self.shrink(ux+self.__bx, 1/self.lam)
+			self.__dy = self.shrink(uy+self.__by, 1/self.lam)
+
+			self.__bx = self.__bx + (ux - self.__dx)
+			self.__by = self.__by + (uy - self.__dy)
+
+			error = np.sum(np.sum( (uprev-u)*(uprev-u) ))
 
 
 
@@ -68,14 +83,21 @@ class Denoise:
 				G[i,j] = a*self.f[i,j] + b*(u[i+1,j] + u[i-1,j] + u[i,j+1] + u[i,j-1]) + b*( d_dx - d_bx + d_dy - d_by )
 
 		return G
-	
+
+	# TODO(mjrodriguez): Fix bug in shrink function	
 	def shrink(self,x: np.array,y: np.array) -> np.array:
 		Z = np.zeros(x.shape)
-		return np.sign(x)*np.max(np.abs(x)-y,Z)
+		return np.sign(x)*np.amax(np.abs(x)-y,Z)
 
 if __name__ == "__main__":
 
 	img = skimage.io.imread("./pics/len_std.jpg", as_gray=True)
 
 	nimg = skimage.util.random_noise(img,mode='gaussian', seed=None, clip=True)
+
+	dn = Denoise(nimg,max_iter=2)
+
+	dn.atv_rof_sb()
+
+
 
