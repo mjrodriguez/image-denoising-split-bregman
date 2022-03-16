@@ -24,7 +24,7 @@ class Denoise:
 		pass
 
 
-	def atv_rof_sb(self):
+	def atv_rof_sb(self) -> np.array:
 
 		# Declaring some work variables
 		self.__dx = np.zeros(self.f.shape)
@@ -55,7 +55,6 @@ class Denoise:
 
 			self.__dx = self.shrink(ux+self.__bx, 1/self.lam)
 			self.__dy = self.shrink(uy+self.__by, 1/self.lam)
-
 			self.__bx = self.__bx + (ux - self.__dx)
 			self.__by = self.__by + (uy - self.__dy)
 
@@ -66,8 +65,7 @@ class Denoise:
 		return u
 
 
-	def gs(self, u):
-
+	def gs(self, u: np.array) -> np.array:
 		G = np.zeros(self.f.shape)
 		G = u
 
@@ -87,7 +85,7 @@ class Denoise:
 	# TODO(mjrodriguez): Fix bug in shrink function	
 	def shrink(self,x: np.array,y: np.array) -> np.array:
 		Z = np.zeros(x.shape)
-		return np.sign(x)*np.amax(np.abs(x)-y,Z)
+		return np.sign(x)*np.maximum(np.abs(x)-y,Z)
 
 if __name__ == "__main__":
 
@@ -95,9 +93,15 @@ if __name__ == "__main__":
 
 	nimg = skimage.util.random_noise(img,mode='gaussian', seed=None, clip=True)
 
-	dn = Denoise(nimg,max_iter=2)
+	skimage.io.imshow(nimg)
+	plt.show()
 
-	dn.atv_rof_sb()
+	dn = Denoise(nimg,max_iter=10)
+
+	clean_img = dn.atv_rof_sb()
+
+	skimage.io.imshow(clean_img)
+	plt.show()
 
 
 
