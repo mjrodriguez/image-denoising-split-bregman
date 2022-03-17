@@ -71,8 +71,8 @@ class Denoise:
 		a = self.mu/(self.mu + 4*self.lam)
 		b = self.lam/(self.mu + 4*self.lam)
 
-		for i in range(1,G.shape[0]-1):
-			for j in range(1,G.shape[1]-1):
+		for i in range(G.shape[0]):
+			for j in range(G.shape[1]):
 				d_dx = self.__dx[i,j]-self.__dx[i-1,j]
 				d_bx = self.__bx[i,j]-self.__bx[i-1,j]
 				d_dy = self.__dy[i,j] - self.__dy[i,j-1]
