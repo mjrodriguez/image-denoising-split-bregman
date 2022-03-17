@@ -1,6 +1,7 @@
+from typing import ChainMap
 import numpy as np
 import matplotlib.pyplot as plt
-import skimage
+import scipy.io as sio
 
 
 # Anisotropic Total Variation ROF Denoising
@@ -9,7 +10,7 @@ import skimage
 # lam = regularization parameter for Bregman Iteration
 # max_iter = Maximum number of iterations
 class Denoise:
-	def __init__(self, f, mu=100, lam=50, max_iter=50):
+	def __init__(self, f, mu=100, lam=50, max_iter=15):
 
 		self.f = f
 		self.mu = mu
@@ -19,8 +20,7 @@ class Denoise:
 		self.width = self.f.shape[1]
 		self.height = self.f.shape[0]
 
-		self.tol = 1e-4
-
+		self.tol = 1e-3*np.linalg.norm(f.flatten(),2)
 		pass
 
 
@@ -39,9 +39,9 @@ class Denoise:
 		k = 1
 		error = 1
 
-		while error > self.tol and k < self.max_iter:
+		while error > self.tol and k <= self.max_iter:
 			k += 1
-			uprev = u
+			uprev = np.array(u)
 
 			# Subproblem 1: Compute the optimal solution the u subproblem
 			u = self.gs(u)
@@ -59,13 +59,12 @@ class Denoise:
 			self.__by = self.__by + (uy - self.__dy)
 
 			error = np.sum(np.sum( (uprev-u)*(uprev-u) ))
-
-
-
+			print("k = ", k, " Error = ", error)
 		return u
 
 
 	def gs(self, u: np.array) -> np.array:
+		# TODO(mjrodriguez): Implement boundary conditions
 		G = np.zeros(self.f.shape)
 		G = u
 
@@ -82,25 +81,42 @@ class Denoise:
 
 		return G
 
-	# TODO(mjrodriguez): Fix bug in shrink function	
 	def shrink(self,x: np.array,y: np.array) -> np.array:
 		Z = np.zeros(x.shape)
 		return np.sign(x)*np.maximum(np.abs(x)-y,Z)
 
 if __name__ == "__main__":
 
-	img = skimage.io.imread("./pics/len_std.jpg", as_gray=True)
+	# Pulling lena matrix from Bregman Cookbok Example code by Jerome Gilles
+	mat = sio.loadmat('./pics/lena.mat')
+	img = mat['lena']
+	f = img + 0.1*np.random.rand(img.shape[0], img.shape[1])
 
-	nimg = skimage.util.random_noise(img,mode='gaussian', seed=None, clip=True)
-
-	skimage.io.imshow(nimg)
-	plt.show()
-
-	dn = Denoise(nimg,max_iter=10)
-
+	# Default parameters
+	# mu = 100
+	# lambda = 50
+	# iter = 15
+	dn = Denoise(f)
+	# Denoise Image
 	clean_img = dn.atv_rof_sb()
 
-	skimage.io.imshow(clean_img)
+	fig = plt.figure()
+	fig.add_subplot(1,4,1)
+	plt.title('Original Image')
+	plt.imshow(img, cmap='gray')
+
+	fig.add_subplot(1,4,2)
+	plt.title('Noisy Image')
+	plt.imshow(f,cmap='gray')
+
+	fig.add_subplot(1,4,3)
+	plt.title('Denoised Image')
+	plt.imshow(clean_img, cmap='gray')
+
+	fig.add_subplot(1,4,4)
+	plt.title('Difference')
+	plt.imshow(img-clean_img, cmap='gray')
+	
 	plt.show()
 
 
