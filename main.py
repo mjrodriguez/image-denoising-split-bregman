@@ -36,7 +36,8 @@ class Denoise:
 
 		# Iteration
 		k = 1
-		error = 1
+		error = self.tol*1e3
+		print("k = ", k, " Error = ", error)
 
 		while error > self.tol and k <= self.max_iter:
 			k += 1
@@ -87,7 +88,7 @@ class Denoise:
 if __name__ == "__main__":
 
 	# Pulling lena matrix from Bregman Cookbok Example code by Jerome Gilles
-	mat = sio.loadmat('./pics/lena.mat')
+	mat = sio.loadmat('./pics/lena.mat') # imports a python dict
 	img = mat['lena']
 	f = img + 0.1*np.random.rand(img.shape[0], img.shape[1])
 
@@ -95,7 +96,12 @@ if __name__ == "__main__":
 	# mu = 100
 	# lambda = 50
 	# iter = 15
+	
 	dn = Denoise(f)
+
+	# Other parameters can be assigned this way:
+	# dn = Denoise(f,mu=100,lam=15, max_iter=30)
+
 	# Denoise Image
 	clean_img = dn.atv_rof_sb()
 
