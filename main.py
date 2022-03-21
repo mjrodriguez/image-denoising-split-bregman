@@ -63,25 +63,34 @@ class Denoise:
 		return u
 
 
-	def gs(self, u: np.array) -> np.array:
+	def gs(self, U: np.array) -> np.array:
 		# TODO(mjrodriguez): Implement boundary conditions
-		G = np.zeros(self.f.shape)
-		G = u
+		G = np.zeros(U.shape)
+		u = np.zeros([self.height+2, self.width+2])
+
+		u[1:self.height+1,1:self.width+1] = U
+		u[0, 1:self.width+1] = U[-1,:]
+		u[-1,1:self.width+1] = U[0,:]
+		u[1:self.height+1,0] = U[:,-1]
+		u[1:self.height+1,-1] = U[:,0]
+		# print("u = ", u.shape)
+		# print(u)
 
 		a = self.mu/(self.mu + 4*self.lam)
 		b = self.lam/(self.mu + 4*self.lam)
 
-		for i in range(1,G.shape[0]-1):
-			for j in range(1,G.shape[1]-1):
-				d_dx = self.__dx[i,j]-self.__dx[i-1,j]
-				d_bx = self.__bx[i,j]-self.__bx[i-1,j]
+		for i in range(G.shape[0]):
+			for j in range(G.shape[1]):
+				# print(i,j)
+				d_dx = self.__dx[i,j] - self.__dx[i-1,j]
+				d_bx = self.__bx[i,j] - self.__bx[i-1,j]
 				d_dy = self.__dy[i,j] - self.__dy[i,j-1]
 				d_by = self.__by[i,j] - self.__by[i,j-1]
 				G[i,j] = a*self.f[i,j] + b*(u[i+1,j] + u[i-1,j] + u[i,j+1] + u[i,j-1]) + b*( d_dx - d_bx + d_dy - d_by )
 
 		return G
 
-	def shrink(self,x: np.array,y: np.array) -> np.array:
+	def shrink(self, x: np.array,y: np.array) -> np.array:
 		Z = np.zeros(x.shape)
 		return np.sign(x)*np.maximum(np.abs(x)-y,Z)
 
