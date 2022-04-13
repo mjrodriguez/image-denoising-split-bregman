@@ -1,3 +1,4 @@
+from tkinter import W
 import numpy as np
 import matplotlib.pyplot as plt
 import scipy.io as sio
@@ -46,6 +47,8 @@ class Denoise:
 			# Subproblem 1: Compute the optimal solution the u subproblem
 			u = self.gs(u)
 
+			print("max u = ", np.amax(np.amax(u)))
+
 			# Subproblem 2: Update dx and dy	
 			# Computing the finite difference derivatives du/dx and du/dy
 			uxtemp = np.c_[u[:,0], u[:,:self.width-1]]
@@ -59,34 +62,55 @@ class Denoise:
 			self.__by = self.__by + (uy - self.__dy)
 
 			error = np.sum(np.sum( (uprev-u)*(uprev-u) ))
-			print("k = ", k, " Error = ", error)
+			print("k = ", k, " Error = ", error, " Tol = ", self.tol)
 		return u
 
 
 	def gs(self, U: np.array) -> np.array:
 		# TODO(mjrodriguez): Implement boundary conditions
-		G = np.zeros(U.shape)
-		u = np.zeros([self.height+2, self.width+2])
 
-		u[1:self.height+1,1:self.width+1] = U
-		u[0, 1:self.width+1] = U[-1,:]
-		u[-1,1:self.width+1] = U[0,:]
-		u[1:self.height+1,0] = U[:,-1]
-		u[1:self.height+1,-1] = U[:,0]
+		G = np.zeros(U.shape)
+		periodic = True
+		# periodic = False
+		if periodic == True:
+			# print("Periodic BC")
+			u = np.zeros([self.height+2, self.width+2])
+		# u = np.array(U)
+
+			u[1:self.height+1,1:self.width+1] = U
+			u[0, 1:self.width+1] = U[-1,:]
+			u[-1,1:self.width+1] = U[0,:]
+			u[1:self.height+1,0] = U[:,-1]
+			u[1:self.height+1,-1] = U[:,0]
 		# print("u = ", u.shape)
 		# print(u)
 
-		a = self.mu/(self.mu + 4*self.lam)
-		b = self.lam/(self.mu + 4*self.lam)
+			a = self.mu/(self.mu + 4*self.lam)
+			b = self.lam/(self.mu + 4*self.lam)
 
-		for i in range(G.shape[0]):
-			for j in range(G.shape[1]):
-				# print(i,j)
-				d_dx = self.__dx[i,j] - self.__dx[i-1,j]
-				d_bx = self.__bx[i,j] - self.__bx[i-1,j]
-				d_dy = self.__dy[i,j] - self.__dy[i,j-1]
-				d_by = self.__by[i,j] - self.__by[i,j-1]
-				G[i,j] = a*self.f[i,j] + b*(u[i+1,j] + u[i-1,j] + u[i,j+1] + u[i,j-1]) + b*( d_dx - d_bx + d_dy - d_by )
+			for i in range(G.shape[0]):
+				for j in range(G.shape[1]):
+					# print(i,j)
+					d_dx = self.__dx[i,j] - self.__dx[i-1,j]
+					d_bx = self.__bx[i,j] - self.__bx[i-1,j]
+					d_dy = self.__dy[i,j] - self.__dy[i,j-1]
+					d_by = self.__by[i,j] - self.__by[i,j-1]
+					G[i,j] = a*self.f[i,j] + b*(u[i+1,j] + u[i-1,j] + u[i,j+1] + u[i,j-1]) + b*( d_dx - d_bx + d_dy - d_by )
+		else:
+			# print("What are BCs?")
+			u = np.array(U)
+
+			a = self.mu/(self.mu + 4*self.lam)
+			b = self.lam/(self.mu + 4*self.lam)
+
+			for i in range(1,G.shape[0]-1):
+				for j in range(1,G.shape[1]-1):
+					# print(i,j)
+					d_dx = self.__dx[i,j] - self.__dx[i-1,j]
+					d_bx = self.__bx[i,j] - self.__bx[i-1,j]
+					d_dy = self.__dy[i,j] - self.__dy[i,j-1]
+					d_by = self.__by[i,j] - self.__by[i,j-1]
+					G[i,j] = a*self.f[i,j] + b*(u[i+1,j] + u[i-1,j] + u[i,j+1] + u[i,j-1]) + b*( d_dx - d_bx + d_dy - d_by )
 
 		return G
 
@@ -106,32 +130,39 @@ if __name__ == "__main__":
 	# lambda = 50
 	# iter = 15
 	
-	dn = Denoise(f)
+	dn = Denoise(f, max_iter=20)
 
 	# Other parameters can be assigned this way:
 	# dn = Denoise(f,mu=100,lam=15, max_iter=30)
 
 	# Denoise Image
 	clean_img = dn.atv_rof_sb()
+	diff = img-clean_img
+	print(np.amin(np.amin(diff)), np.amax(np.amax(diff)))
 
 	fig = plt.figure()
 	fig.add_subplot(1,4,1)
 	plt.title('Original Image')
+	plt.axis('off')
 	plt.imshow(img, cmap='gray')
 
 	fig.add_subplot(1,4,2)
 	plt.title('Noisy Image')
+	plt.axis('off')
 	plt.imshow(f,cmap='gray')
 
 	fig.add_subplot(1,4,3)
 	plt.title('Denoised Image')
+	plt.axis('off')
 	plt.imshow(clean_img, cmap='gray')
 
 	fig.add_subplot(1,4,4)
 	plt.title('Difference')
+	plt.axis('off')
 	plt.imshow(img-clean_img, cmap='gray')
 	
 	plt.show()
+
 
 
 
