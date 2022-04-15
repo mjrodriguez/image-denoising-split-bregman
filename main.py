@@ -10,7 +10,7 @@ import scipy.io as sio
 # lam = regularization parameter for Bregman Iteration
 # max_iter = Maximum number of iterations
 class Denoise:
-	def __init__(self, f, mu=100, lam=50, max_iter=15):
+	def __init__(self, f, mu=100, lam=50, max_iter=15, BCs='mirror'):
 
 		self.f = f
 		self.mu = mu
@@ -19,7 +19,7 @@ class Denoise:
 
 		self.width = self.f.shape[1]
 		self.height = self.f.shape[0]
-
+		self.BCs = BCs
 		self.tol = 1e-3*np.linalg.norm(f.flatten(),2)
 		pass
 
@@ -47,7 +47,7 @@ class Denoise:
 			# Subproblem 1: Compute the optimal solution the u subproblem
 			u = self.gs(u)
 
-			print("max u = ", np.amax(np.amax(u)))
+			# print("max u = ", np.amax(np.amax(u)))
 
 			# Subproblem 2: Update dx and dy	
 			# Computing the finite difference derivatives du/dx and du/dy
@@ -67,23 +67,17 @@ class Denoise:
 
 
 	def gs(self, U: np.array) -> np.array:
-		# TODO(mjrodriguez): Implement boundary conditions
-
+		#TODO(mjrodriguez): Implement no flux BCs
 		G = np.zeros(U.shape)
-		periodic = True
-		# periodic = False
-		if periodic == True:
-			# print("Periodic BC")
+
+		if self.BCs == 'periodic':
 			u = np.zeros([self.height+2, self.width+2])
-		# u = np.array(U)
 
 			u[1:self.height+1,1:self.width+1] = U
 			u[0, 1:self.width+1] = U[-1,:]
 			u[-1,1:self.width+1] = U[0,:]
 			u[1:self.height+1,0] = U[:,-1]
 			u[1:self.height+1,-1] = U[:,0]
-		# print("u = ", u.shape)
-		# print(u)
 
 			a = self.mu/(self.mu + 4*self.lam)
 			b = self.lam/(self.mu + 4*self.lam)
@@ -96,8 +90,29 @@ class Denoise:
 					d_dy = self.__dy[i,j] - self.__dy[i,j-1]
 					d_by = self.__by[i,j] - self.__by[i,j-1]
 					G[i,j] = a*self.f[i,j] + b*(u[i+1,j] + u[i-1,j] + u[i,j+1] + u[i,j-1]) + b*( d_dx - d_bx + d_dy - d_by )
-		else:
-			# print("What are BCs?")
+
+		elif self.BCs == 'mirror':
+			u = np.zeros([self.height+2, self.width+2])
+
+			u[1:self.height+1,1:self.width+1] = U
+			u[0, 1:self.width+1] = U[0,:]
+			u[-1,1:self.width+1] = U[-1,:]
+			u[1:self.height+1,0] = U[:,0]
+			u[1:self.height+1,-1] = U[:,-1]
+
+			a = self.mu/(self.mu + 4*self.lam)
+			b = self.lam/(self.mu + 4*self.lam)
+
+			for i in range(G.shape[0]):
+				for j in range(G.shape[1]):
+					# print(i,j)
+					d_dx = self.__dx[i,j] - self.__dx[i-1,j]
+					d_bx = self.__bx[i,j] - self.__bx[i-1,j]
+					d_dy = self.__dy[i,j] - self.__dy[i,j-1]
+					d_by = self.__by[i,j] - self.__by[i,j-1]
+					G[i,j] = a*self.f[i,j] + b*(u[i+1,j] + u[i-1,j] + u[i,j+1] + u[i,j-1]) + b*( d_dx - d_bx + d_dy - d_by )
+			
+		elif self.BCs == 'none':
 			u = np.array(U)
 
 			a = self.mu/(self.mu + 4*self.lam)
@@ -129,6 +144,7 @@ if __name__ == "__main__":
 	# mu = 100
 	# lambda = 50
 	# iter = 15
+	# BCs = 'mirror'
 	
 	dn = Denoise(f, max_iter=20)
 
@@ -138,7 +154,7 @@ if __name__ == "__main__":
 	# Denoise Image
 	clean_img = dn.atv_rof_sb()
 	diff = img-clean_img
-	print(np.amin(np.amin(diff)), np.amax(np.amax(diff)))
+	# print(np.amin(np.amin(diff)), np.amax(np.amax(diff)))
 
 	fig = plt.figure()
 	fig.add_subplot(1,4,1)
