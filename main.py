@@ -8,13 +8,13 @@ import scipy.io as sio
 # mu = regularization parameter
 # lam = regularization parameter for Bregman Iteration
 # max_iter = Maximum number of iterations
-class Denoise:
-	def __init__(self, f, mu=100, lam=50, max_iter=15, BCs='periodic'):
+class ImageRestore:
+	def __init__(self, f, mu, lam=50, max_iter=15, BCs='periodic'):
 
 		self.f = f
+		self.mu = np.ones(self.f.shape)
 		self.mu = mu
-		self.lam = np.ones(self.f.shape)
-		self.lam = lam*self.lam
+		self.lam = lam
 
 		self.max_iter = max_iter
 
@@ -83,8 +83,8 @@ class Denoise:
 
 			for i in range(G.shape[0]):
 				for j in range(G.shape[1]):
-					a = self.mu/(self.mu + 4*self.lam[i,j])
-					b = self.lam[i,j]/(self.mu + 4*self.lam[i,j])
+					a = self.mu[i,j]/(self.mu[i,j] + 4*self.lam)
+					b = self.lam/(self.mu[i,j] + 4*self.lam)
 					# print(i,j)
 					d_dx = self.__dx[i,j] - self.__dx[i-1,j]
 					d_bx = self.__bx[i,j] - self.__bx[i-1,j]
@@ -104,8 +104,8 @@ class Denoise:
 
 			for i in range(G.shape[0]):
 				for j in range(G.shape[1]):
-					a = self.mu/(self.mu + 4*self.lam[i,j])
-					b = self.lam[i,j]/(self.mu + 4*self.lam[i,j])
+					a = self.mu[i,j]/(self.mu[i,j] + 4*self.lam)
+					b = self.lam/(self.mu[i,j] + 4*self.lam)
 					# print(i,j)
 					d_dx = self.__dx[i,j] - self.__dx[i-1,j]
 					d_bx = self.__bx[i,j] - self.__bx[i-1,j]
@@ -119,8 +119,8 @@ class Denoise:
 
 			for i in range(1,G.shape[0]-1):
 				for j in range(1,G.shape[1]-1):
-					a = self.mu/(self.mu + 4*self.lam[i,j])
-					b = self.lam[i,j]/(self.mu + 4*self.lam[i,j])
+					a = self.mu[i,j]/(self.mu[i,j] + 4*self.lam)
+					b = self.lam/(self.mu[i,j] + 4*self.lam)
 					# print(i,j)
 					d_dx = self.__dx[i,j] - self.__dx[i-1,j]
 					d_bx = self.__bx[i,j] - self.__bx[i-1,j]
@@ -146,9 +146,9 @@ if __name__ == "__main__":
 	# lambda = 50
 	# iter = 15
 	# BCs = 'mirror'
-	
-	dn = Denoise(f, max_iter=20)
 
+	mu = 100*np.ones(f.shape)	
+	dn = ImageRestore(f, mu, max_iter=20)
 	# Other parameters can be assigned this way:
 	# dn = Denoise(f,mu=100,lam=15, max_iter=30)
 
