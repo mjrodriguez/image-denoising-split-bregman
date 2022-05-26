@@ -1,4 +1,3 @@
-from tkinter import W
 import numpy as np
 import matplotlib.pyplot as plt
 import scipy.io as sio
@@ -10,11 +9,13 @@ import scipy.io as sio
 # lam = regularization parameter for Bregman Iteration
 # max_iter = Maximum number of iterations
 class Denoise:
-	def __init__(self, f, mu=100, lam=50, max_iter=15, BCs='mirror'):
+	def __init__(self, f, mu=100, lam=50, max_iter=15, BCs='periodic'):
 
 		self.f = f
 		self.mu = mu
-		self.lam = lam
+		self.lam = np.ones(self.f.shape)
+		self.lam = lam*self.lam
+
 		self.max_iter = max_iter
 
 		self.width = self.f.shape[1]
@@ -79,11 +80,11 @@ class Denoise:
 			u[1:self.height+1,0] = U[:,-1]
 			u[1:self.height+1,-1] = U[:,0]
 
-			a = self.mu/(self.mu + 4*self.lam)
-			b = self.lam/(self.mu + 4*self.lam)
 
 			for i in range(G.shape[0]):
 				for j in range(G.shape[1]):
+					a = self.mu/(self.mu + 4*self.lam[i,j])
+					b = self.lam[i,j]/(self.mu + 4*self.lam[i,j])
 					# print(i,j)
 					d_dx = self.__dx[i,j] - self.__dx[i-1,j]
 					d_bx = self.__bx[i,j] - self.__bx[i-1,j]
@@ -100,11 +101,11 @@ class Denoise:
 			u[1:self.height+1,0] = U[:,0]
 			u[1:self.height+1,-1] = U[:,-1]
 
-			a = self.mu/(self.mu + 4*self.lam)
-			b = self.lam/(self.mu + 4*self.lam)
 
 			for i in range(G.shape[0]):
 				for j in range(G.shape[1]):
+					a = self.mu/(self.mu + 4*self.lam[i,j])
+					b = self.lam[i,j]/(self.mu + 4*self.lam[i,j])
 					# print(i,j)
 					d_dx = self.__dx[i,j] - self.__dx[i-1,j]
 					d_bx = self.__bx[i,j] - self.__bx[i-1,j]
@@ -115,11 +116,11 @@ class Denoise:
 		elif self.BCs == 'none':
 			u = np.array(U)
 
-			a = self.mu/(self.mu + 4*self.lam)
-			b = self.lam/(self.mu + 4*self.lam)
 
 			for i in range(1,G.shape[0]-1):
 				for j in range(1,G.shape[1]-1):
+					a = self.mu/(self.mu + 4*self.lam[i,j])
+					b = self.lam[i,j]/(self.mu + 4*self.lam[i,j])
 					# print(i,j)
 					d_dx = self.__dx[i,j] - self.__dx[i-1,j]
 					d_bx = self.__bx[i,j] - self.__bx[i-1,j]
